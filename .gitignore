@@ -1,3 +1,13 @@
+# Folders with data for my project
+Proyecto/data/nips-2017-non-targeted-adversarial-attack
+Proyecto/data/images
+Proyecto/Notebooks/Attacks/models
+
+# Original repo of TorchAttacks
+Proyecto/adversarial-attacks-pytorch-master
+
+
+
 # Folders with data
 Tareas/Tarea-1/data
 Tareas/Tarea-2/data
