@@ -1,12 +1,29 @@
-# Folders with data for my project
+# Folders with data and models for my project
 Proyecto/data/nips-2017-non-targeted-adversarial-attack
 Proyecto/data/images
 Proyecto/Notebooks/Attacks/models
+Proyecto/Notebooks/Defenses/models
+Proyecto/Notebooks/Defenses/data
+Proyecto/Notebooks/Defenses/models/FGSM_test.pt
+Proyecto/Notebooks/Defenses/models/FGSM_train.pt
+Proyecto/Notebooks/Defenses/models/MIFGSM_test.pt
+Proyecto/Notebooks/Defenses/models/MIFGSM_train.pt
+Proyecto/Notebooks/Defenses/models/OnePixel_test.pt
+Proyecto/Notebooks/Defenses/models/OnePixel_train.pt
+Proyecto/Notebooks/Defenses/models/PGD_test.pt
+Proyecto/Notebooks/Defenses/models/PGD_train.pt
+
+# Tex files
+Proyecto/Presentación/Presentación.aux
+Proyecto/Presentación/Presentación.log
+Proyecto/Presentación/Presentación.nav
+Proyecto/Presentación/Presentación.out
+Proyecto/Presentación/Presentación.snm
+Proyecto/Presentación/Presentación.synctex.gz
+Proyecto/Presentación/Presentación.toc
 
 # Original repo of TorchAttacks
 Proyecto/adversarial-attacks-pytorch-master
-
-
 
 # Folders with data
 Tareas/Tarea-1/data
