@@ -21,4 +21,4 @@ Para el ataque de *caja negra* generé los ejemplos adversarios con Inception v3
 | MobileNet v2 | 85.0 / 97.3 | 51.7 / 78.3 | 59.4 / 82.9 | 56.3 / 81.5 |  83.5 / 97.0 |
 
 <!-- Todo gordito y bonito el colibrí -->
-<img src='../../Presentación/Images/hummingbird_blackbox_FGSM.png'>
+<img src='../../Presentación/Images/hummingbird_blackbox_FGSM.png'>git 
