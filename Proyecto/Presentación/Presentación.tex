@@ -90,7 +90,7 @@
 \usepackage{wrapfig}
 \usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
 \usepackage{multicol}
-\usepackage[font=scriptsize,labelfont=scriptsize]{caption}
+\usepackage[font=scriptsize,labelfont=scriptsize,justification=centering]{caption}
 \usepackage[spanish,es-tabla]{babel}
 \usepackage[utf8]{inputenc}
 \usepackage{csquotes}
@@ -207,7 +207,7 @@
 {	Licenciatura en Ciencia de Datos \\
 	Introducción al Aprendizaje Profundo \\ \medskip M. en C. Berenice Montalvo Lezama \\ M. en C. Ricardo Montalvo Lezama
 }
-\date{{\tiny 23 de abril de 2021}} % Date, can be changed to a custom date
+\date{{\tiny \today}} % Date, can be changed to a custom date
 
 \vspace*{-5em}
 
@@ -235,7 +235,7 @@
 \small
 Las redes neuronales profundas son modelos poderosos que se han utilizado ampliamente para lograr un rendimiento cercano al nivel humano en una variedad de tareas. \medskip
 
-Sin embargo, a pesar de su desempeño superior estudios recientes han encontrado que incluso los modelos del estado del arte son muy vulnerables a ataques adversarios.
+Sin embargo, a pesar de su desempeño superior estudios recientes han encontrado que incluso los modelos del estado del arte son sumamente vulnerables a ataques adversarios.
 \end{frame}
 
 \begin{frame}{Introducción}
@@ -345,7 +345,9 @@ El dataset para esta competencia debía cumplir con 3 aspectos:
 \item Muestras de datos que nunca se usaron antes.
 \end{enumerate}
 
-El conjunto de ImageNet cumple con los primeros dos requisitos, posteriormente se etiquetaron 1000 nuevas imágenes compatibles con ImageNet las cuales servían como el conjunto de datos de desarrollo para la competencia y para cumplir el tercer requisito.
+El conjunto de ImageNet cumple con los primeros dos requisitos, posteriormente se etiquetaron 1000 nuevas imágenes compatibles con ImageNet las cuales servían como el conjunto de datos de desarrollo para la competencia y para cumplir el tercer requisito. \medskip
+
+Desafortunadamente, nunca hicieron público el dataset de evaluación ni el modelo de caja negra que había que engañar, por lo que no hay manera de comparar mis resultados con los de la competencia.
 
 \end{frame}
 
@@ -354,42 +356,205 @@ El conjunto de ImageNet cumple con los primeros dos requisitos, posteriormente s
 \justify	
 \small
 
-Hay una variedad de arquitecturas preentrenadas en \href{https://pytorch.org/vision/stable/models.html}{PyTorch} con el conjunto de datos de ImageNet que sirven a la perfección para esta tarea. La idea es tratar de implementar varias técnicas de ataques adversarios\footnote{\vspace*{0.3cm} \href{https://reader.elsevier.com/reader/sd/pii/S209580991930503X?token=D051F74ED28FC5C7871D901893E9DAA76D35478F8C374211EC76DA66B1D71487CCB669164F543A5F3A04AE89239AC6C9&originRegion=us-east-1&originCreation=20210425231353}{Kui Ren et al., \emph{Adversarial Attacks and Defenses in Deep Learning}, 2020.}} sobre estas arquitecturas, como 
+La idea es tratar de implementar varias técnicas de ataques adversarios\footnote{\vspace*{0.3cm} \href{https://reader.elsevier.com/reader/sd/pii/S209580991930503X?token=D051F74ED28FC5C7871D901893E9DAA76D35478F8C374211EC76DA66B1D71487CCB669164F543A5F3A04AE89239AC6C9&originRegion=us-east-1&originCreation=20210425231353}{Kui Ren et al., \emph{Adversarial Attacks and Defenses in Deep Learning}, 2020.}} sobre las arquitecturas existentes, particularmente usaré los siguientes cuatro métodos: 
 
 \begin{itemize}
-\item \textbf{Métodos de gradiente:} la idea es $\bm{x}_{\text{adversario}} = \bm{x} + f(\nabla_{x}J(\bm{\theta}, \bm{x}, y))$.
+\item \textbf{FGSM (Fast Gradient Sign Method):} la idea es generar el ejemplo adversario $\bm{x}_{\text{adv}}$ de la siguiente forma
+%
+\[ \bm{x}_{\text{adv}} = \bm{x} + \epsilon \cdot \text{sign}\left( \nabla_{\bm{x}} J(\bm{\theta}, \bm{x}, y) \right). \]
+%
+donde $J$ es la función de pérdida (usualmente cross-entropy), $\bm{\theta}$ los pesos del modelo, $\bm{x}$ la imagen original y $y$ la etiqueta.
 
-\item \textbf{Métodos de distribución:} realiza la optimización sobre las posibles distribuciones adversarias.
-
-\item \textbf{Basados en GANs: } un generador es entrenado para aprender la distribución adversaria maximizando la función de pérdida $J(\bm{\theta}, \bm{x}, y)$.
+\item \textbf{PGD (Projected Gradient Descent):} podemos verlo como una variante de varios pasos, donde $\alpha$ es la magnitud de la perturbación en cada paso
+%
+\[ \bm{x}_{\text{adv}}^{t+1} = \text{Proj}\left( \bm{x}_{\text{adv}}^{t} + \alpha \cdot  \text{sign}\left( \nabla_{\bm{x}} J(\bm{\theta}, \bm{x}, y) \right) \right) \]
 \end{itemize}
-
 
 \end{frame}
 
 \begin{frame}{Propuesta de solución}
 \justify	
 \small
-Por ejemplo, usando un PGD\footnote{\vspace*{0.3cm} \href{https://arxiv.org/pdf/1706.06083.pdf}{A. Madry et al., \emph{Towards Deep Learning Models Resistant to Adversarial
-Attacks}, 2019.}} en un clasificador entrenado en CIFAR10
 
-\begin{figure}
+\begin{itemize}
+\item \textbf{MIFGSM (Momentum Iterative Fast Gradient Sign Method):} algoritmo ganador de esta competencia, inspirados por los optimizadores con momento proponen
+%
+\[ \bm{x}_{\text{adv}}^{t+1} = \text{Clip}\left( \bm{x}_{\text{adv}}^{t} + \alpha \cdot  \text{sign}(g_{t+1}) \right), \]
+%
+donde $g_{t+1} = \xi \cdot g_{t} + \dfrac{ \nabla_{\bm{x}} J(\bm{\theta}, \bm{x}, y)}{\left\Vert J(\bm{\theta}, \bm{x}, y) \right\Vert} $, donde $\xi$ es un factor de decaimiento.
+
+\item \textbf{One Pixel Attack:} plantea el problema como un problema de optimización
+%
+\begin{align*}
+& \hspace{2em} \max_{\bm{x}_{\text{adv}}} f_{\text{adv}} (\bm{x} + \bm{x}_{\text{adv}}), \\
+& \text{con la restricción } \left\Vert \bm{x}_{\text{adv}} \right\Vert \leq d,
+\end{align*}
+%
+donde $d = 1$ para el caso de un ataque a un pixel. Particularmente proponen resolver este problema de optimización con \emph{evolución diferencial}.
+
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Propuesta de solución}
+\justify	
+\small
+
+Hay una variedad de arquitecturas preentrenadas en \href{https://pytorch.org/vision/stable/models.html}{PyTorch} con el conjunto de datos de ImageNet que sirven a la perfección para esta tarea, particularmente usaré las siguientes
+
+\begin{itemize}
+\item AlexNet
+\item Resnet18
+\item Inception v3
+\item MobileNet v2
+\end{itemize}
+
+Con estas arquitecturas y métodos se pueden explorar los ataques y defensas adversarias.
+
+\end{frame}
+
+\section{Resultados}
+\begin{frame}{Resultados}
+\justify	
+\small
+Con los ataques de caja blanca, donde los ejemplos adversarios se hacen a la medida de cada modelo, la disminución en el accuracy es enorme. Particularmente el ataque a un sólo pixel no es tan eficiente, pero en cualquier caso logra bajar el accuracy.
+%
+\begin{table}[H]
 \centering
-\includegraphics[width=0.65\linewidth]{Images/plane.pdf}
-\caption{Ejemplo de un ataque adversario usando el dataset de CIFAR10.}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+\textbf{Modelo} & \textbf{\begin{tabular}[c]{@{}c@{}}Limpio \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}FGSM \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}PGD \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}MIFGSM \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}OnePixel \\ (acc@1/acc@5)\end{tabular}} \\ \midrule
+AlexNet         & 60.9 / 84.6                                                              & 6.0 / 28.6                                                             & 2.9 / 19.3                                                            & 3.5 / 21.0                                                               & 58.3 / 83.4                                                                \\
+ResNet-18       & 82.5 / 95.4                                                              & 3.5 / 24.3                                                             & 0.8 / 14.6                                                            & 1.0 / 13.5                                                               & 78.7 / 94.5                                                                \\
+Inception v3    & 76.5 / 93.1                                                              & 10.8 / 39.3                                                            & 3.9 / 28.1                                                            & 5.1 / 27.6                                                               & 70.1 / 91.8                                                                \\
+MobileNet v2    & 85.0 / 97.3                                                              & 3.5 / 24.4                                                             & 0.5 / 11.3                                                            & 0.6 / 8.8                                                                & 81.4 / 96.6                                                                \\ \bottomrule
+\end{tabular}%
+}
+\caption{Ataques de caja blanca.}
+\end{table}
+
+\end{frame}
+
+\begin{frame}{Resultados}
+\justify	
+\small
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{Images/hummingbird_alexnet_FGSM.png}
+\caption{Ataque a AlexNet con FGSM.}
 \end{figure}
 
 \end{frame}
 
-\section{Trabajo por hacer}
-\begin{frame}{Trabajo por hacer}
+\begin{frame}{Resultados}
+\justify	
+\small
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{Images/inception_v3_OnePixel.png}
+\caption{Ataque a Inception v3 con OnePixel.}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{Resultados}
+\justify	
+\small
+Para el ataque de caja negra generé los ejemplos adversarios con Inception v3 y los probé en MobileNet v2, el cual funcionaba como mi modelo de caja negra. En este caso fui más agresivo con los ataques. Aunque no es tan efectivo como un ataque de caja blanca, se logra bajar considerablemente el accuracy del modelo. 
+%
+\begin{table}[]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+\textbf{Modelo} & \textbf{\begin{tabular}[c]{@{}c@{}}Limpio \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}FGSM \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}PGD \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}MIFGSM \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}OnePixel \\ (acc@1/acc@5)\end{tabular}} \\ \midrule
+MobileNet v2    & 85.0 / 97.3                                                              & 51.7 / 78.3                                                            & 59.4 / 82.9                                                           & 56.3 / 81.5                                                              & 83.5 / 97.0                                                                \\ \bottomrule
+\end{tabular}%
+}
+\caption{Ataque de caja negra a MobileNet v2.}
+\end{table}
+
+\end{frame}
+
+\begin{frame}{Resultados}
+\justify	
+\small
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{Images/hummingbird_blackbox_FGSM.png}
+\caption{Ataque de caja negra a MobileNet v2 con FGSM.}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{Resultados}
+\justify	
+\small
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.99\linewidth]{Images/blackbox_OnePixel.png}
+\caption{Ataque de caja negra a MobileNet v2 con OnePixel.}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{Resultados}
+\justify	
+\small
+Una de las formas de hacer más robustos los modelos a ataques adversarios es agregar ejemplos adversarios al conjunto de datos de entrenamiento. Para probar, agregué ejemplos adversarios al conjunto de CIFAR10 y entrené una versión modificada de MobileNet v2 sin y con los ejemplos adversarios.
+
+% Please add the following required packages to your document preamble:
+% \usepackage{booktabs}
+% \usepackage{graphicx}
+\begin{table}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}cccccc@{}}
+\toprule
+\textbf{Modelo}          & \textbf{\begin{tabular}[c]{@{}c@{}}Limpio \\ (accuracy)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}FGSM \\ (accuracy)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}PGD \\ (accuracy)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}MIFGSM \\ (accuracy)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}OnePixel \\ (accuracy)\end{tabular}} \\ \midrule
+MobileNet v2             & 81.68                                                                 & 37.03                                                               & 28.29                                                              & 31.27                                                                 & 63.17                                                                   \\
+MobileNet v2 adversarial & 80.62                                                                 & 77.44                                                               & 77.49                                                              & 77.35                                                                 & 77.58                                                                   \\ \bottomrule
+\end{tabular}%
+}
+\caption{Entrenamiento sin y con ejemplos adversarios en CIFAR10 con una versión modificada de MobileNet v2.}
+\end{table}
+
+\end{frame}
+
+\begin{frame}{Resultados}
+\justify	
+\small
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\linewidth]{Images/cifar10_FGSM.png}
+\caption{Ataque adversario con FGSM a MobileNet v2 entrenada sin ejemplos adversarios.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\linewidth]{Images/cifar10_adversarial_FGSM.png}
+\caption{Ataque adversario con FGSM a MobileNet v2 entrenada con ejemplos adversarios.}
+\end{figure}
+
+\end{frame}
+
+\section{Conclusiones}
+\begin{frame}{Conclusiones}
 \justify	
 \small
 
 \begin{itemize}
-\item Usar los modelos preentrenados de \href{https://pytorch.org/vision/stable/models.html}{PyTorch} para hacer ataques en un dataset de prueba.
+\item Los ataques adversarios son un fenómeno interesante y un problema importante en la seguridad del aprendizaje automático, por lo que es relevante hacer notar a la comunidad de este problema.
 
-\item Una propuesta para defensa de ataques adversarios es entrenar el modelo con una mezcla de imágenes limpias y adversarias \footnote{\href{https://arxiv.org/pdf/1412.6572.pdf}{Goodfellow et al., \emph{\vspace*{0.3cm} Explaining and harnessing adversarial examples}, 2016.}}, por lo que con los ataques generados es posible construir un modelo más robusto resistente a los ataques.  
+\item Ataques relativamente simples pueden engañar fácilmente incluso a los modelos más recientes sin que un humano llegue a notarlos.
+
+\item El estudio de estos ataques a su vez nos puede ayudar a generar defensas para hacer a los modelos más robustos, confiables y seguros.
 \end{itemize}
 
 \end{frame}
