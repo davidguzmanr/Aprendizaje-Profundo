@@ -119,11 +119,149 @@ En segundo lugar, los escenarios de ataque se pueden clasificar por la cantidad 
 
 \subsection{Algoritmos de ataques adversarios}
 
-Hay una multitud \cite{OnePixel}
+Hay una multitud de ataques adversarios, pero particularmente usaré los siguientes cuatro:
+
+\begin{enumerate}
+\item \textbf{FGSM (Fast Gradient Sign Method)} \cite{FGSM}: la idea es generar el ejemplo adversario $\bm{x}_{\text{adv}}$ de la siguiente forma
+%
+\[ \bm{x}_{\text{adv}} = \bm{x} + \epsilon \cdot \text{sign}\left( \nabla_{\bm{x}} J(\bm{\theta}, \bm{x}, y) \right). \]
+%
+donde $\epsilon$ es el orden de la perturbación, $J$ es la función de pérdida (usualmente cross-entropy), $\bm{\theta}$ los pesos del modelo, $\bm{x}$ la imagen original y $y$ la etiqueta.
+
+\item \textbf{PGD (Projected Gradient Descent)} \cite{PGD}: podemos verlo como una variante de varios pasos, donde $\alpha$ es la magnitud de la perturbación en cada paso
+%
+\[ \bm{x}_{\text{adv}}^{t+1} = \text{Proj}\left( \bm{x}_{\text{adv}}^{t} + \alpha \cdot  \text{sign}\left( \nabla_{\bm{x}} J(\bm{\theta}, \bm{x}, y) \right) \right) \]
+
+\item \textbf{MIFGSM (Momentum Iterative Fast Gradient Sign Method)} \cite{MIFGSM}: algoritmo ganador de esta competencia, inspirados por los optimizadores con momento proponen
+%
+\[ \bm{x}_{\text{adv}}^{t+1} = \text{Clip}\left( \bm{x}_{\text{adv}}^{t} + \alpha \cdot  \text{sign}(g_{t+1}) \right), \]
+%
+donde $g_{t+1} = \xi \cdot g_{t} + \dfrac{ \nabla_{\bm{x}} J(\bm{\theta}, \bm{x}, y)}{\left\Vert J(\bm{\theta}, \bm{x}, y) \right\Vert} $, donde $\xi$ es un factor de decaimiento.
+
+\item \textbf{One Pixel Attack} \cite{OnePixel}: plantea el problema como un problema de optimización
+%
+\begin{align*}
+	& \hspace{2em} \max_{\bm{x}_{\text{adv}}} f_{\text{adv}} (\bm{x} + \bm{x}_{\text{adv}}), \\
+	& \text{con la restricción } \left\Vert \bm{x}_{\text{adv}} \right\Vert \leq d,
+\end{align*}
+%
+donde $d = 1$ para el caso de un ataque a un pixel. Particularmente proponen resolver este problema de optimización con \emph{evolución diferencial}.
+
+\end{enumerate}
 
 \section{Objetivo}
 
 El objetivo del proyecto es explorar y desarrollar algunas de las técnicas usadas para generar ataques adversarios así como explorar algunos de los métodos de defensa que existen.
+
+\section{Propuesta de solución}
+
+Hay una variedad de arquitecturas preentrenadas en PyTorch con el conjunto de datos de ImageNet que sirven a la perfección para esta tarea, particularmente usaré las siguientes
+
+\begin{itemize}
+	\item AlexNet
+	\item Resnet18
+	\item Inception v3
+	\item MobileNet v2
+\end{itemize}
+
+Con estas arquitecturas y métodos se exploraron los ataques y defensas adversarias.
+
+\begin{itemize}
+\item Para los ataques de caja blanca los ejemplos adversarios se hacen a la medida para cada modelo, posteriormente podemos evaluar el accuracy con cada ataque.
+
+\item Para el ataque de caja negra se generaron los ejemplos adversarios con Inception v3 y se le pasaron a MobileNet v2.
+
+\item Para las defensas usé una versión modificada de MobileNet v2 para que use CIFAR10. Entrené desde cero usando el dataset de entrenamiento de CIFAR10 y posteriomente entrené otro modelo agregando 20,000 ejemplos adversarios al dataset, lo que hace que el modelo sea más robusto a ataques adversarios. 
+\end{itemize}
+
+\section{Resultados}
+
+Con los ataques de caja blanca, donde los ejemplos adversarios se hacen a la medida de cada modelo, la disminución en el accuracy es enorme.
+
+\begin{table}[H]
+	\centering
+	\resizebox{\linewidth}{!}{%
+		\begin{tabular}{@{}cccccc@{}}
+			\toprule
+			\textbf{Modelo} & \textbf{\begin{tabular}[c]{@{}c@{}}Limpio \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}FGSM \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}PGD \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}MIFGSM \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}OnePixel \\ (acc@1/acc@5)\end{tabular}} \\ \midrule
+			AlexNet         & 60.9 / 84.6                                                              & 6.0 / 28.6                                                             & 2.9 / 19.3                                                            & 3.5 / 21.0                                                               & 58.3 / 83.4                                                                \\
+			ResNet-18       & 82.5 / 95.4                                                              & 3.5 / 24.3                                                             & 0.8 / 14.6                                                            & 1.0 / 13.5                                                               & 78.7 / 94.5                                                                \\
+			Inception v3    & 76.5 / 93.1                                                              & 10.8 / 39.3                                                            & 3.9 / 28.1                                                            & 5.1 / 27.6                                                               & 70.1 / 91.8                                                                \\
+			MobileNet v2    & 85.0 / 97.3                                                              & 3.5 / 24.4                                                             & 0.5 / 11.3                                                            & 0.6 / 8.8                                                                & 81.4 / 96.6                                                                \\ \bottomrule
+		\end{tabular}%
+	}
+	\caption{Ataques de caja blanca.}
+\end{table}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.99\linewidth]{Images/hummingbird_alexnet_FGSM.png}
+	\caption{Ataque de caja blanca a AlexNet con FGSM.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.99\linewidth]{Images/inception_v3_OnePixel.png}
+	\caption{Ataque de caja blanca a Inception v3 con OnePixel.}
+\end{figure}
+
+En el caso del ataque de caja negra hice los ataques más agresivos, aunque no es tan efectivo como un ataque de caja blanca, se logra bajar considerablemente el accuracy del modelo.
+
+\begin{table}[H]
+	\centering
+	\resizebox{\linewidth}{!}{%
+		\begin{tabular}{@{}cccccc@{}}
+			\toprule
+			\textbf{Modelo} & \textbf{\begin{tabular}[c]{@{}c@{}}Limpio \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}FGSM \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}PGD \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}MIFGSM \\ (acc@1/acc@5)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}OnePixel \\ (acc@1/acc@5)\end{tabular}} \\ \midrule
+			MobileNet v2    & 85.0 / 97.3                                                              & 51.7 / 78.3                                                            & 59.4 / 82.9                                                           & 56.3 / 81.5                                                              & 83.5 / 97.0                                                                \\ \bottomrule
+		\end{tabular}%
+	}
+	\caption{Ataque de caja negra a MobileNet v2.}
+\end{table}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.99\linewidth]{Images/hummingbird_blackbox_FGSM.png}
+	\caption{Ataque de caja negra a MobileNet v2 con FGSM.}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.99\linewidth]{Images/blackbox_OnePixel.png}
+	\caption{Ataque de caja negra a MobileNet v2 con OnePixel.}
+\end{figure}
+
+En cuanto al entrenamiento con ejemplos adversarios, se confirma que es una técnica sencilla pero eficiente.
+
+\begin{table}[H]
+	\centering
+	\resizebox{\linewidth}{!}{%
+		\begin{tabular}{@{}cccccc@{}}
+			\toprule
+			\textbf{Modelo}          & \textbf{\begin{tabular}[c]{@{}c@{}}Limpio \\ (accuracy)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}FGSM \\ (accuracy)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}PGD \\ (accuracy)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}MIFGSM \\ (accuracy)\end{tabular}} & \textbf{\begin{tabular}[c]{@{}c@{}}OnePixel \\ (accuracy)\end{tabular}} \\ \midrule
+			MobileNet v2             & 81.68                                                                 & 37.03                                                               & 28.29                                                              & 31.27                                                                 & 63.17                                                                   \\
+			MobileNet v2 adversarial & 80.62                                                                 & 77.44                                                               & 77.49                                                              & 77.35                                                                 & 77.58                                                                   \\ \bottomrule
+		\end{tabular}%
+	}
+	\caption{Entrenamiento sin y con ejemplos adversarios en CIFAR10 con una versión modificada de MobileNet v2.}
+\end{table}
+
+\begin{figure}[H]
+	\centering
+	\subfigure[Ataque adversario con FGSM a MobileNet v2 entrenada sin ejemplos adversarios.]{\includegraphics[width=0.99\linewidth]{Images/cifar10_FGSM.png}}
+	\subfigure[Ataque adversario con FGSM a MobileNet v2 entrenada con ejemplos adversarios.]{\includegraphics[width=0.99\linewidth]{Images/cifar10_adversarial_FGSM.png}}
+	\caption{Entrenamiento adversario.}
+\end{figure}
+
+\section{Conclusiones}
+
+\begin{itemize}
+	\item Los ataques adversarios son un fenómeno interesante y un problema importante en la seguridad del aprendizaje automático, por lo que es relevante hacer notar a la comunidad de este problema.
+	
+	\item Ataques relativamente simples pueden engañar fácilmente incluso a los modelos más recientes sin que un humano llegue a notarlos.
+	
+	\item El estudio de estos ataques a su vez nos puede ayudar a generar defensas para hacer a los modelos más robustos, confiables y seguros.
+\end{itemize}
 
 \bibliographystyle{ieeetr}
 \bibliography{bib.bib}
