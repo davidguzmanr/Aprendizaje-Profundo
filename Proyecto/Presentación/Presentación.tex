@@ -245,7 +245,7 @@ Un ataque adversario es una muestra de datos de entrada que ha sido perturbada l
 
 \blfootnote{\vspace*{0.3cm} \href{https://arxiv.org/pdf/1412.6572.pdf}{Goodfellow et al., \emph{Explaining and harnessing adversarial examples}, 2016.}}
 
-\begin{figure}
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.85\linewidth]{Images/ejemplo1_anotado.png}
 \caption{Ejemplo de ataque adversario. Imagen tomada de \href{https://arxiv.org/pdf/1412.6572.pdf}{\emph{Explaining and harnessing adversarial examples}.}}
@@ -259,7 +259,7 @@ Un ataque adversario es una muestra de datos de entrada que ha sido perturbada l
 
 \blfootnote{\vspace*{0.3cm} \href{https://arxiv.org/pdf/1412.6572.pdf}{Su et al., \emph{One Pixel Attack for Fooling Deep Neural Networks}, 2019.}}
 
-\begin{figure}
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.3\linewidth]{Images/ejemplo3_anotado.png}
 \caption{Ejemplo de ataque adversario en el que es posible engañar a la red cambiando únicamente un pixel. Imagen tomada de \href{https://arxiv.org/pdf/1710.08864.pdf}{\emph{One Pixel Attack for Fooling Deep Neural Networks}.}}
@@ -328,7 +328,7 @@ Para acelerar la investigación sobre ataques de adversarios, Google Brain organ
 \item Defensas contra ataques adversarios.
 \end{itemize}
 
-Por el momento me concentraré en los ataques adversarios no dirigidos, la cual trata de un ataque de caja negra no dirigido, es decir, dada una imagen de entrada generar una imagen adversaria que engañe a un clasificador desconocido.
+Por el momento me concentré en los ataques adversarios no dirigidos, la cual trata de un ataque de caja negra no dirigido, es decir, dada una imagen de entrada generar una imagen adversaria que engañe a un clasificador desconocido.
 
 \end{frame}
 
@@ -363,7 +363,7 @@ La idea es tratar de implementar varias técnicas de ataques adversarios\footnot
 %
 \[ \bm{x}_{\text{adv}} = \bm{x} + \epsilon \cdot \text{sign}\left( \nabla_{\bm{x}} J(\bm{\theta}, \bm{x}, y) \right). \]
 %
-donde $J$ es la función de pérdida (usualmente cross-entropy), $\bm{\theta}$ los pesos del modelo, $\bm{x}$ la imagen original y $y$ la etiqueta.
+donde $\epsilon$ es el orden de la perturbación, $J$ es la función de pérdida (usualmente cross-entropy), $\bm{\theta}$ los pesos del modelo, $\bm{x}$ la imagen original y $y$ la etiqueta.
 
 \item \textbf{PGD (Projected Gradient Descent):} podemos verlo como una variante de varios pasos, donde $\alpha$ es la magnitud de la perturbación en cada paso
 %
